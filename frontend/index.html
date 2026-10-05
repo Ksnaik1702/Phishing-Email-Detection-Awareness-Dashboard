@@ -1,0 +1,497 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PhishGuard • SOC Defensive Suite & Phishing Triage</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Font Awesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <!-- Chart.js CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <!-- Custom Styles -->
+  <link rel="stylesheet" href="/static/css/styles.css">
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            cyberDark: '#0b0f19',
+            cyberCard: '#131b2e',
+            cyberBorder: '#1f2d4d',
+            cyberAccent: '#3b82f6',
+            cyberGreen: '#10b981',
+            cyberYellow: '#f59e0b',
+            cyberRed: '#ef4444'
+          }
+        }
+      }
+    }
+  </script>
+</head>
+<body class="bg-cyberDark text-slate-100 min-h-screen flex flex-col font-sans">
+
+  <!-- ============================================== -->
+  <!-- 1. AUTHENTICATION GATEWAY (LOGIN / REGISTER) -->
+  <!-- ============================================== -->
+  <div id="auth-gateway" class="min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-cyberDark via-slate-950 to-blue-950/40">
+    <div class="w-full max-w-md bg-cyberCard border border-cyberBorder rounded-2xl p-8 shadow-2xl space-y-6 relative">
+      
+      <!-- Brand Header -->
+      <div class="text-center space-y-2">
+        <div class="inline-flex w-14 h-14 rounded-2xl bg-blue-600/20 border border-blue-500/30 items-center justify-center text-blue-400 mb-1">
+          <i class="fa-solid fa-shield-halved text-2xl"></i>
+        </div>
+        <h1 class="text-2xl font-black tracking-tight text-white">PhishGuard</h1>
+        <p class="text-xs text-slate-400">Security Operations Center • Email Triage Portal</p>
+      </div>
+
+      <!-- Auth Toggle Tabs -->
+      <div class="flex border-b border-cyberBorder text-xs font-semibold">
+        <button onclick="switchGatewayTab('login')" id="gate-tab-login" class="flex-1 pb-2.5 text-blue-400 border-b-2 border-blue-500 transition">
+          <i class="fa-solid fa-right-to-bracket mr-1"></i> Analyst Sign In
+        </button>
+        <button onclick="switchGatewayTab('register')" id="gate-tab-register" class="flex-1 pb-2.5 text-slate-400 hover:text-slate-200 transition">
+          <i class="fa-solid fa-user-plus mr-1"></i> Register Analyst
+        </button>
+      </div>
+
+      <!-- Login Form -->
+      <form id="gate-form-login" onsubmit="handleGatewayLogin(event)" class="space-y-4">
+        <div>
+          <label class="block text-xs font-semibold text-slate-300 mb-1.5">Username</label>
+          <div class="relative">
+            <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-slate-500"><i class="fa-solid fa-user text-xs"></i></span>
+            <input type="text" id="gate-login-user" required placeholder="Enter username" class="w-full pl-9 bg-slate-900 border border-cyberBorder rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-blue-500">
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold text-slate-300 mb-1.5">Password</label>
+          <div class="relative">
+            <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-slate-500"><i class="fa-solid fa-lock text-xs"></i></span>
+            <input type="password" id="gate-login-pass" required placeholder="Enter password" class="w-full pl-9 bg-slate-900 border border-cyberBorder rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-blue-500">
+          </div>
+        </div>
+
+        <button type="submit" id="btn-gate-login" class="w-full bg-blue-600 hover:bg-blue-500 text-white font-semibold py-2.5 rounded-lg text-sm transition flex items-center justify-center gap-2 shadow-lg shadow-blue-600/20">
+          <i class="fa-solid fa-shield-halved"></i> Authenticate Session
+        </button>
+      </form>
+
+      <!-- Registration Form -->
+      <form id="gate-form-register" onsubmit="handleGatewayRegister(event)" class="hidden space-y-4">
+        <div>
+          <label class="block text-xs font-semibold text-slate-300 mb-1.5">Analyst Username</label>
+          <input type="text" id="gate-reg-user" required placeholder="Enter new username" class="w-full bg-slate-900 border border-cyberBorder rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-blue-500">
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold text-slate-300 mb-1.5">Password</label>
+          <input type="password" id="gate-reg-pass" required placeholder="Minimum 6 characters" class="w-full bg-slate-900 border border-cyberBorder rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-blue-500">
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold text-slate-300 mb-1.5">Designation / Role</label>
+          <input type="text" id="gate-reg-role" required placeholder="e.g. SOC Analyst" class="w-full bg-slate-900 border border-cyberBorder rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-blue-500">
+        </div>
+
+        <button type="submit" id="btn-gate-reg" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-semibold py-2.5 rounded-lg text-sm transition flex items-center justify-center gap-2 shadow-lg shadow-emerald-600/20">
+          <i class="fa-solid fa-user-shield"></i> Create Analyst Account
+        </button>
+      </form>
+
+      <!-- Error message banner -->
+      <div id="gate-error" class="hidden text-xs text-red-400 bg-red-500/10 border border-red-500/30 p-3 rounded-lg flex items-center gap-2">
+        <i class="fa-solid fa-circle-exclamation"></i> <span id="gate-error-msg"></span>
+      </div>
+
+      <div class="text-center text-[11px] text-slate-500 pt-2 border-t border-cyberBorder">
+        Enterprise Defensive Cybersecurity Gateway • Authorized Access Only
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ============================================== -->
+  <!-- 2. AUTHENTICATED SOC DASHBOARD APPLICATION -->
+  <!-- ============================================== -->
+  <div id="app-container" class="hidden flex-1 flex flex-col">
+
+    <!-- Header Navigation -->
+    <header class="border-b border-cyberBorder bg-cyberCard/80 backdrop-blur sticky top-0 z-50">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+        <div class="flex items-center space-x-3">
+          <div class="w-10 h-10 rounded-lg bg-blue-600/20 border border-blue-500/30 flex items-center justify-center text-blue-400">
+            <i class="fa-solid fa-shield-halved text-xl"></i>
+          </div>
+          <div>
+            <h1 class="text-lg font-bold tracking-tight text-white flex items-center gap-2">
+              PhishGuard <span class="text-xs px-2 py-0.5 rounded bg-blue-500/20 text-blue-400 border border-blue-500/30">SOC Suite</span>
+            </h1>
+            <p class="text-xs text-slate-400">Email Phishing Detection & Awareness Dashboard</p>
+          </div>
+        </div>
+
+        <!-- Navigation Tabs & User Profile -->
+        <div class="flex items-center space-x-3">
+          <nav class="flex items-center space-x-1 sm:space-x-2 text-sm font-medium">
+            <button onclick="switchTab('dashboard')" id="nav-dashboard" class="nav-btn px-3 py-1.5 rounded-lg transition bg-blue-600 text-white">
+              <i class="fa-solid fa-chart-line mr-1.5"></i> Dashboard
+            </button>
+            <button onclick="switchTab('analyzer')" id="nav-analyzer" class="nav-btn px-3 py-1.5 rounded-lg transition text-slate-300 hover:bg-slate-800">
+              <i class="fa-solid fa-envelope-open-text mr-1.5"></i> Email Analyzer
+            </button>
+            <button onclick="switchTab('url-analyzer')" id="nav-url-analyzer" class="nav-btn px-3 py-1.5 rounded-lg transition text-slate-300 hover:bg-slate-800">
+              <i class="fa-solid fa-link mr-1.5"></i> URL Inspector
+            </button>
+            <button onclick="switchTab('history')" id="nav-history" class="nav-btn px-3 py-1.5 rounded-lg transition text-slate-300 hover:bg-slate-800">
+              <i class="fa-solid fa-clock-rotate-left mr-1.5"></i> Audit History
+            </button>
+            <button onclick="switchTab('awareness')" id="nav-awareness" class="nav-btn px-3 py-1.5 rounded-lg transition text-slate-300 hover:bg-slate-800">
+              <i class="fa-solid fa-graduation-cap mr-1.5"></i> Awareness
+            </button>
+          </nav>
+
+          <!-- Analyst Profile Badge & Sign Out -->
+          <div class="pl-2 border-l border-cyberBorder flex items-center space-x-2">
+            <div class="hidden md:block text-right">
+              <div id="header-user-name" class="text-xs font-bold text-white leading-tight">Analyst</div>
+              <div id="header-user-role" class="text-[10px] text-blue-400 leading-tight">SOC Analyst</div>
+            </div>
+            <button onclick="handleGatewayLogout()" title="Sign Out" class="p-2 rounded-lg bg-slate-800 hover:bg-red-600/20 text-slate-300 hover:text-red-400 border border-cyberBorder transition">
+              <i class="fa-solid fa-power-off text-xs"></i>
+            </button>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <!-- Main Container -->
+    <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
+
+      <!-- ============================================== -->
+      <!-- TAB 1: DASHBOARD TELEMETRY -->
+      <!-- ============================================== -->
+      <div id="tab-dashboard" class="tab-content space-y-6">
+        <!-- KPI Top Summary Cards -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+          <div class="kpi-card bg-cyberCard border border-cyberBorder rounded-xl p-4 flex items-center space-x-4">
+            <div class="p-3 rounded-lg bg-blue-500/10 text-blue-400"><i class="fa-solid fa-inbox text-2xl"></i></div>
+            <div>
+              <p class="text-xs font-medium text-slate-400">Total Analyzed</p>
+              <h3 id="stat-total" class="text-2xl font-bold text-white">0</h3>
+            </div>
+          </div>
+
+          <div class="kpi-card bg-cyberCard border border-cyberBorder rounded-xl p-4 flex items-center space-x-4">
+            <div class="p-3 rounded-lg bg-red-500/10 text-red-400"><i class="fa-solid fa-skull-crossbones text-2xl"></i></div>
+            <div>
+              <p class="text-xs font-medium text-slate-400">Likely Phishing</p>
+              <h3 id="stat-phishing" class="text-2xl font-bold text-red-400">0</h3>
+            </div>
+          </div>
+
+          <div class="kpi-card bg-cyberCard border border-cyberBorder rounded-xl p-4 flex items-center space-x-4">
+            <div class="p-3 rounded-lg bg-amber-500/10 text-amber-400"><i class="fa-solid fa-triangle-exclamation text-2xl"></i></div>
+            <div>
+              <p class="text-xs font-medium text-slate-400">Suspicious</p>
+              <h3 id="stat-suspicious" class="text-2xl font-bold text-amber-400">0</h3>
+            </div>
+          </div>
+
+          <div class="kpi-card bg-cyberCard border border-cyberBorder rounded-xl p-4 flex items-center space-x-4">
+            <div class="p-3 rounded-lg bg-emerald-500/10 text-emerald-400"><i class="fa-solid fa-shield-check text-2xl"></i></div>
+            <div>
+              <p class="text-xs font-medium text-slate-400">Low Risk / Safe</p>
+              <h3 id="stat-safe" class="text-2xl font-bold text-emerald-400">0</h3>
+            </div>
+          </div>
+
+          <div class="kpi-card bg-cyberCard border border-cyberBorder rounded-xl p-4 flex items-center space-x-4">
+            <div class="p-3 rounded-lg bg-purple-500/10 text-purple-400"><i class="fa-solid fa-gauge-high text-2xl"></i></div>
+            <div>
+              <p class="text-xs font-medium text-slate-400">Avg Risk Score</p>
+              <h3 id="stat-avg" class="text-2xl font-bold text-purple-400">0.0</h3>
+            </div>
+          </div>
+        </div>
+
+        <!-- Live Interactive Charts -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <!-- Classification Doughnut Chart -->
+          <div class="bg-cyberCard border border-cyberBorder rounded-xl p-5 space-y-4">
+            <h3 class="text-sm font-semibold text-slate-200 flex items-center gap-2">
+              <i class="fa-solid fa-chart-pie text-blue-400"></i> Classification Breakdown
+            </h3>
+            <div class="h-64 flex items-center justify-center">
+              <canvas id="classificationChart"></canvas>
+            </div>
+          </div>
+
+          <!-- Indicator Frequency Bar Chart -->
+          <div class="bg-cyberCard border border-cyberBorder rounded-xl p-5 space-y-4">
+            <h3 class="text-sm font-semibold text-slate-200 flex items-center gap-2">
+              <i class="fa-solid fa-fingerprint text-purple-400"></i> Top Threat Indicators
+            </h3>
+            <div class="h-64 flex items-center justify-center">
+              <canvas id="indicatorsChart"></canvas>
+            </div>
+          </div>
+
+          <!-- 7-Day Activity Trend -->
+          <div class="bg-cyberCard border border-cyberBorder rounded-xl p-5 space-y-4">
+            <h3 class="text-sm font-semibold text-slate-200 flex items-center gap-2">
+              <i class="fa-solid fa-chart-simple text-emerald-400"></i> 7-Day Ingestion Trend
+            </h3>
+            <div class="h-64 flex items-center justify-center">
+              <canvas id="trendChart"></canvas>
+            </div>
+          </div>
+        </div>
+
+        <!-- Triage Prompt Banner -->
+        <div class="bg-gradient-to-r from-blue-900/30 to-purple-900/30 border border-blue-500/20 rounded-xl p-6 flex flex-col md:flex-row items-center justify-between gap-4">
+          <div>
+            <h2 class="text-lg font-bold text-white">Security Operations Triage Ready</h2>
+            <p class="text-sm text-slate-300">Paste and inspect incoming email headers, body content, hyperlinks, and attachments.</p>
+          </div>
+          <div>
+            <button onclick="switchTab('analyzer')" class="px-5 py-2.5 rounded-lg bg-blue-600 hover:bg-blue-500 text-white font-semibold text-sm transition flex items-center gap-2">
+              <i class="fa-solid fa-magnifying-glass"></i> Go to Email Analyzer
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ============================================== -->
+      <!-- TAB 2: EMAIL ANALYZER SECTION (100% CLEAN FORM) -->
+      <!-- ============================================== -->
+      <div id="tab-analyzer" class="tab-content hidden space-y-6">
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+          
+          <!-- Left: Input Form (5 cols) -->
+          <div class="lg:col-span-5 bg-cyberCard border border-cyberBorder rounded-xl p-5 space-y-4">
+            <div class="flex items-center justify-between pb-3 border-b border-cyberBorder">
+              <h2 class="text-base font-bold text-white flex items-center gap-2">
+                <i class="fa-solid fa-magnifying-glass text-blue-400"></i> Ingest Email for Triage
+              </h2>
+              <button type="button" onclick="clearForm()" class="text-xs text-slate-400 hover:text-white px-2 py-1 rounded bg-slate-800 border border-cyberBorder">
+                <i class="fa-solid fa-eraser mr-1"></i> Clear Form
+              </button>
+            </div>
+
+            <form id="email-form" onsubmit="handleEmailSubmit(event)" class="space-y-3">
+              <div>
+                <label class="block text-xs font-semibold text-slate-300 mb-1">Sender Email Address <span class="text-red-400">*</span></label>
+                <input type="text" id="input-sender" required placeholder="name@domain.com" class="w-full bg-slate-900 border border-cyberBorder rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-blue-500">
+              </div>
+
+              <div>
+                <label class="block text-xs font-semibold text-slate-300 mb-1">Sender Display Name (Optional)</label>
+                <input type="text" id="input-display-name" placeholder="Optional display name" class="w-full bg-slate-900 border border-cyberBorder rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-blue-500">
+              </div>
+
+              <div>
+                <label class="block text-xs font-semibold text-slate-300 mb-1">Email Subject Line <span class="text-red-400">*</span></label>
+                <input type="text" id="input-subject" required placeholder="Subject line" class="w-full bg-slate-900 border border-cyberBorder rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-blue-500">
+              </div>
+
+              <div>
+                <label class="block text-xs font-semibold text-slate-300 mb-1">Email Body Content <span class="text-red-400">*</span></label>
+                <textarea id="input-body" rows="6" required placeholder="Paste the email message body here..." class="w-full bg-slate-900 border border-cyberBorder rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-blue-500 font-mono text-xs"></textarea>
+              </div>
+
+              <div>
+                <label class="block text-xs font-semibold text-slate-300 mb-1">Embedded / Explicit URLs (Optional)</label>
+                <input type="text" id="input-urls" placeholder="Optional URLs separated by spaces" class="w-full bg-slate-900 border border-cyberBorder rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-blue-500 font-mono text-xs">
+              </div>
+
+              <div>
+                <label class="block text-xs font-semibold text-slate-300 mb-1">Attachment Filename (Optional)</label>
+                <input type="text" id="input-attachment" placeholder="e.g. document.pdf" class="w-full bg-slate-900 border border-cyberBorder rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-blue-500">
+              </div>
+
+              <div class="pt-2 flex gap-2">
+                <button type="submit" id="btn-analyze" class="flex-1 bg-blue-600 hover:bg-blue-500 text-white font-semibold py-2.5 px-4 rounded-lg text-sm transition flex items-center justify-center gap-2">
+                  <i class="fa-solid fa-radar"></i> Analyze Email
+                </button>
+                <button type="button" onclick="clearForm()" class="bg-slate-800 hover:bg-slate-700 text-slate-300 py-2.5 px-4 rounded-lg text-sm transition">
+                  Reset
+                </button>
+              </div>
+            </form>
+          </div>
+
+          <!-- Right: Results Card (7 cols) -->
+          <div class="lg:col-span-7 space-y-4">
+            <div id="results-empty" class="bg-cyberCard border border-dashed border-cyberBorder rounded-xl p-12 text-center text-slate-400 space-y-3">
+              <i class="fa-solid fa-shield-virus text-5xl text-slate-600"></i>
+              <h3 class="text-lg font-medium text-slate-300">No Email Analyzed Yet</h3>
+              <p class="text-xs max-w-md mx-auto">Fill in the fields on the left and click 'Analyze Email' to initiate multi-vector heuristic and machine learning phishing analysis.</p>
+            </div>
+
+            <div id="results-container" class="hidden space-y-4">
+              <!-- Overall Score Banner -->
+              <div id="score-banner" class="rounded-xl border p-5 bg-cyberCard flex flex-col sm:flex-row items-center justify-between gap-4">
+                <div class="flex items-center space-x-4">
+                  <div id="score-circle" class="w-20 h-20 rounded-full border-4 flex flex-col items-center justify-center text-center">
+                    <span id="score-value" class="text-2xl font-black">0</span>
+                    <span class="text-[10px] uppercase font-bold text-slate-400">/ 100</span>
+                  </div>
+                  <div>
+                    <span id="classification-badge" class="px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider">
+                      UNKNOWN
+                    </span>
+                    <h3 id="res-subject" class="text-base font-bold text-white mt-1"></h3>
+                    <p id="res-domain" class="text-xs text-slate-400 font-mono"></p>
+                  </div>
+                </div>
+                <div class="text-right text-xs space-y-1 bg-slate-900/60 p-3 rounded-lg border border-cyberBorder">
+                  <div><span class="text-slate-400">Rule Heuristics:</span> <span id="res-rule-score" class="font-bold text-blue-400">0.0</span></div>
+                  <div><span class="text-slate-400">ML Confidence:</span> <span id="res-ml-score" class="font-bold text-purple-400">0.0</span></div>
+                  <div class="text-[10px] text-slate-500" id="res-analysis-id"></div>
+                </div>
+              </div>
+
+              <!-- "WHY?" Explainability Findings -->
+              <div class="bg-cyberCard border border-cyberBorder rounded-xl p-5 space-y-3">
+                <h4 class="text-sm font-bold text-white flex items-center gap-2">
+                  <i class="fa-solid fa-circle-question text-amber-400"></i> Explainable Security Findings (Why is this flagged?)
+                </h4>
+                <ul id="res-explanations" class="space-y-2 text-xs"></ul>
+              </div>
+
+              <!-- Recommended Actions (SOC Playbook) -->
+              <div class="bg-cyberCard border border-cyberBorder rounded-xl p-5 space-y-3">
+                <h4 class="text-sm font-bold text-white flex items-center gap-2">
+                  <i class="fa-solid fa-list-check text-emerald-400"></i> Recommended Defensive Actions
+                </h4>
+                <ul id="res-recommendations" class="space-y-2 text-xs text-slate-300"></ul>
+              </div>
+
+              <!-- Detailed Breakdowns -->
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div class="bg-cyberCard border border-cyberBorder rounded-xl p-4 space-y-2 text-xs">
+                  <h5 class="font-bold text-slate-200 flex items-center gap-1.5"><i class="fa-solid fa-at text-blue-400"></i> Sender Vector</h5>
+                  <div id="res-sender-breakdown" class="text-slate-300 space-y-1"></div>
+                </div>
+
+                <div class="bg-cyberCard border border-cyberBorder rounded-xl p-4 space-y-2 text-xs">
+                  <h5 class="font-bold text-slate-200 flex items-center gap-1.5"><i class="fa-solid fa-paperclip text-amber-400"></i> Attachment Vector</h5>
+                  <div id="res-attachment-breakdown" class="text-slate-300 space-y-1"></div>
+                </div>
+              </div>
+
+              <!-- URL Breakdown List -->
+              <div class="bg-cyberCard border border-cyberBorder rounded-xl p-4 space-y-2 text-xs">
+                <h5 class="font-bold text-slate-200 flex items-center gap-1.5"><i class="fa-solid fa-link text-purple-400"></i> Analyzed URLs (Static Inspection)</h5>
+                <div id="res-url-list" class="space-y-2"></div>
+              </div>
+
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ============================================== -->
+      <!-- TAB 3: STANDALONE URL INSPECTOR -->
+      <!-- ============================================== -->
+      <div id="tab-url-analyzer" class="tab-content hidden space-y-6">
+        <div class="bg-cyberCard border border-cyberBorder rounded-xl p-6 space-y-4 max-w-3xl mx-auto">
+          <h2 class="text-lg font-bold text-white flex items-center gap-2">
+            <i class="fa-solid fa-shield-link text-purple-400"></i> Safe Static URL Risk Inspector
+          </h2>
+          <p class="text-xs text-slate-300">
+            Evaluates URL structure, raw IP usage, high-risk TLDs, subdomains, and obfuscation patterns without sending any web traffic or executing code.
+          </p>
+
+          <form id="url-inspect-form" onsubmit="handleURLInspect(event)" class="flex gap-2">
+            <input type="text" id="single-url-input" required placeholder="Enter or paste any URL..." class="flex-1 bg-slate-900 border border-cyberBorder rounded-lg px-4 py-2.5 text-sm text-white font-mono focus:outline-none focus:border-purple-500">
+            <button type="submit" class="bg-purple-600 hover:bg-purple-500 text-white font-semibold px-5 py-2.5 rounded-lg text-sm transition">
+              Inspect URL
+            </button>
+          </form>
+
+          <div id="url-inspect-result" class="hidden mt-6 space-y-4 pt-4 border-t border-cyberBorder"></div>
+        </div>
+      </div>
+
+      <!-- ============================================== -->
+      <!-- TAB 4: AUDIT HISTORY -->
+      <!-- ============================================== -->
+      <div id="tab-history" class="tab-content hidden space-y-4">
+        <div class="bg-cyberCard border border-cyberBorder rounded-xl p-5 space-y-4">
+          <div class="flex flex-col sm:flex-row items-center justify-between gap-3">
+            <h2 class="text-base font-bold text-white flex items-center gap-2">
+              <i class="fa-solid fa-clock-rotate-left text-blue-400"></i> Triage & Incident Audit History
+            </h2>
+            <div class="flex items-center gap-2 w-full sm:w-auto">
+              <input type="text" id="history-search" oninput="filterHistory()" placeholder="Search subject or domain..." class="bg-slate-900 border border-cyberBorder rounded-lg px-3 py-1.5 text-xs text-white focus:outline-none">
+              <select id="history-filter" onchange="filterHistory()" class="bg-slate-900 border border-cyberBorder rounded-lg px-3 py-1.5 text-xs text-slate-300">
+                <option value="">All Classifications</option>
+                <option value="HIGH RISK / LIKELY PHISHING">High Risk / Phishing</option>
+                <option value="SUSPICIOUS">Suspicious</option>
+                <option value="LOW RISK">Low Risk</option>
+                <option value="SAFE">Safe</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="overflow-x-auto">
+            <table class="w-full text-left text-xs text-slate-300">
+              <thead class="bg-slate-900 text-slate-400 uppercase tracking-wider font-semibold border-b border-cyberBorder">
+                <tr>
+                  <th class="p-3">Analysis ID</th>
+                  <th class="p-3">Sender Domain</th>
+                  <th class="p-3">Subject Line</th>
+                  <th class="p-3">Score</th>
+                  <th class="p-3">Classification</th>
+                  <th class="p-3">Timestamp</th>
+                  <th class="p-3 text-right">Actions</th>
+                </tr>
+              </thead>
+              <tbody id="history-tbody" class="divide-y divide-cyberBorder"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- ============================================== -->
+      <!-- TAB 5: AWARENESS & TRAINING -->
+      <!-- ============================================== -->
+      <div id="tab-awareness" class="tab-content hidden space-y-6">
+        <div class="bg-cyberCard border border-cyberBorder rounded-xl p-6 space-y-4">
+          <h2 class="text-lg font-bold text-white flex items-center gap-2">
+            <i class="fa-solid fa-list-check text-emerald-400"></i> "Before You Click" Security Hygiene Checklist
+          </h2>
+          <p class="text-xs text-slate-300">Interactive quick checklist to verify before clicking links or opening email attachments.</p>
+          <div id="checklist-container" class="grid grid-cols-1 md:grid-cols-2 gap-3 pt-2"></div>
+        </div>
+
+        <div class="space-y-3">
+          <h3 class="text-base font-bold text-white flex items-center gap-2">
+            <i class="fa-solid fa-book-open-reader text-blue-400"></i> Phishing Awareness Micro-Lessons
+          </h3>
+          <div id="lessons-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"></div>
+        </div>
+      </div>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="border-t border-cyberBorder bg-cyberCard/60 py-4 mt-12 text-center text-xs text-slate-400">
+      <p>Phishing Email Detection & Awareness Dashboard • Defensive Cybersecurity Suite</p>
+      <p class="text-[11px] text-slate-500 mt-1">Built with Python, FastAPI, SQLite, Scikit-Learn & Tailwind CSS.</p>
+    </footer>
+
+  </div>
+
+  <!-- Scripts -->
+  <script src="/static/js/api.js"></script>
+  <script src="/static/js/app.js"></script>
+  <script src="/static/js/awareness.js"></script>
+</body>
+</html>
